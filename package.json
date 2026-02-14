@@ -1,0 +1,125 @@
+{
+  "name": "smart-comment-remover",
+  "displayName": "AI-Powered Comment Remover",
+  "description": "Intelligently remove comments from your code while preserving important documentation and annotations",
+  "version": "1.0.0",
+  "publisher": "antigravity",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Formatters"
+  ],
+  "keywords": [
+    "comments",
+    "cleanup",
+    "formatter",
+    "ai",
+    "code-quality"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartCommentRemover.removeComments",
+        "title": "Smart Comment Remover: Remove Comments"
+      },
+      {
+        "command": "smartCommentRemover.removeCommentsInSelection",
+        "title": "Smart Comment Remover: Remove Comments in Selection"
+      },
+      {
+        "command": "smartCommentRemover.previewRemoval",
+        "title": "Smart Comment Remover: Preview Removal"
+      },
+      {
+        "command": "smartCommentRemover.removeCommentsInWorkspace",
+        "title": "Smart Comment Remover: Remove Comments in Workspace"
+      }
+    ],
+    "configuration": {
+      "title": "Smart Comment Remover",
+      "properties": {
+        "smartCommentRemover.preserveDocumentation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Preserve JSDoc, docstrings, and XML documentation comments"
+        },
+        "smartCommentRemover.preserveLicenseHeaders": {
+          "type": "boolean",
+          "default": true,
+          "description": "Preserve copyright and license header comments"
+        },
+        "smartCommentRemover.preserveAnnotations": {
+          "type": "array",
+          "default": [
+            "TODO",
+            "FIXME",
+            "HACK",
+            "BUG",
+            "NOTE"
+          ],
+          "description": "List of annotation keywords to preserve"
+        },
+        "smartCommentRemover.preservePragmas": {
+          "type": "boolean",
+          "default": true,
+          "description": "Preserve compiler directives and linter pragmas"
+        },
+        "smartCommentRemover.showDiffPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show diff preview before removing comments"
+        },
+        "smartCommentRemover.excludePatterns": {
+          "type": "array",
+          "default": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**"
+          ],
+          "description": "Glob patterns for files to exclude from workspace operations"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "smartCommentRemover.removeComments",
+          "group": "modification"
+        },
+        {
+          "command": "smartCommentRemover.removeCommentsInSelection",
+          "when": "editorHasSelection",
+          "group": "modification"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/minimatch": "^5.1.2",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.57.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.3.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "minimatch": "^10.2.0"
+  }
+}
