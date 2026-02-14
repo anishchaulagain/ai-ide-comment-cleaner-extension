@@ -27,9 +27,17 @@ export function activate(context: vscode.ExtensionContext) {
         
         if (showPreview) {
              await diffPreview.showDiff(document);
-             // The diff view allows users to apply changes manually or we could provide a button.
-             // But valid standard flow is just showing diff.
-             // If user wants to APPLY immediately without preview, they can disable setting.
+             const answer = await vscode.window.showInformationMessage(
+                 'Review the changes. Do you want to apply them?',
+                 'Yes',
+                 'No'
+             );
+             
+             if (answer === 'Yes') {
+                 await applyRemoval(editor);
+                 // Optionally close the diff editor? Hard to specificially close just that one.
+                 // But the user will see the original file update.
+             }
              return;
         }
         
@@ -98,14 +106,13 @@ function updateStatusBar() {
 async function applyRemoval(editor: vscode.TextEditor, selectionOnly: boolean = false) {
     const document = editor.document;
     const commentRemover = new CommentRemover();
+    const edit = new vscode.WorkspaceEdit();
     
     if (selectionOnly) {
-        await editor.edit(editBuilder => {
-            editor.selections.forEach(selection => {
-                const text = document.getText(selection);
-                const cleanText = commentRemover.removeComments(text, document.languageId);
-                editBuilder.replace(selection, cleanText);
-            });
+        editor.selections.forEach(selection => {
+            const text = document.getText(selection);
+            const cleanText = commentRemover.removeComments(text, document.languageId);
+            edit.replace(document.uri, selection, cleanText);
         });
     } else {
         const text = document.getText();
@@ -115,11 +122,16 @@ async function applyRemoval(editor: vscode.TextEditor, selectionOnly: boolean = 
                 document.positionAt(0),
                 document.positionAt(text.length)
             );
-            await editor.edit(editBuilder => editBuilder.replace(fullRange, cleanText));
+            edit.replace(document.uri, fullRange, cleanText);
         } else {
              vscode.window.showInformationMessage('No comments found to remove.');
+             return;
         }
     }
+
+    await vscode.workspace.applyEdit(edit);
+    // Explicitly save if it was a full file operation? 
+    // Usually applyEdit doesn't save automatically. user can save.
 }
 
 export function deactivate() {}
