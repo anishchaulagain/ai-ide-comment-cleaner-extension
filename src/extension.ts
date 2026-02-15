@@ -109,14 +109,14 @@ async function applyRemoval(editor: vscode.TextEditor, selectionOnly: boolean = 
     const edit = new vscode.WorkspaceEdit();
     
     if (selectionOnly) {
-        editor.selections.forEach(selection => {
+        for (const selection of editor.selections) {
             const text = document.getText(selection);
-            const cleanText = commentRemover.removeComments(text, document.languageId);
+            const cleanText = await commentRemover.removeCommentsAsync(text, document.languageId);
             edit.replace(document.uri, selection, cleanText);
-        });
+        }
     } else {
         const text = document.getText();
-        const cleanText = commentRemover.removeComments(text, document.languageId);
+        const cleanText = await commentRemover.removeCommentsAsync(text, document.languageId);
         if (text !== cleanText) {
             const fullRange = new vscode.Range(
                 document.positionAt(0),

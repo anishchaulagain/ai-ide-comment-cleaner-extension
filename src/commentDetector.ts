@@ -34,6 +34,32 @@ export class CommentDetector {
         return CommentType.Standard;
     }
 
+    static async classifyAsync(commentText: string, isFirstComment: boolean = false): Promise<CommentType> {
+        // First, try fast regex-based classification
+        const syncResult = this.classify(commentText, isFirstComment);
+
+        // If regex identified it as a specific type, return it immediately to save tokens/time
+        if (syncResult !== CommentType.Standard) {
+            return syncResult;
+        }
+
+        // If it's "Standard", it might be a subtle documentation or just code.
+        // Use AI to verify if enabled.
+        // We need to import AIService dynamically or at top level.
+        // Since this file is used by CommentRemover, which is used by extension...
+        
+        // Check if AI is enabled in config
+        const enableAI = ConfigManager.enableAI;
+        if (!enableAI) {
+            return CommentType.Standard;
+        }
+
+        // Dynamic import to avoid circular dependency if any (AIService imports CommentType from here)
+        const { AIService } = await import('./services/aiService');
+        
+        return await AIService.analyzeComment(commentText);
+    }
+
     private static isPragma(text: string): boolean {
         // Matches @ts-ignore, eslint-disable, etc.
         return /@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|eslint-enable|stylelint-disable|tslint:disable/.test(text);

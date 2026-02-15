@@ -4,7 +4,7 @@ import { CommentDetector, CommentType } from './commentDetector';
 
 export class CommentRemover {
 
-    public removeComments(text: string, languageId: string): string {
+    public async removeCommentsAsync(text: string, languageId: string): Promise<string> {
         const patterns = getLanguagePatterns(languageId);
         if (!patterns) {
             console.warn(`Language ${languageId} not supported.`);
@@ -31,9 +31,6 @@ export class CommentRemover {
             for (let i = 1; i < commentRanges.length; i++) {
                 const next = commentRanges[i];
                 if (next.start < current.end) {
-                    // Overlap: take the larger one or merge? 
-                    // Usually the one starting first is the "outer" one in valid code.
-                    // If they start at the same time, take the longer one.
                     if (next.end > current.end) {
                          current.end = next.end;
                     }
@@ -51,11 +48,10 @@ export class CommentRemover {
             const range = mergedRanges[i];
             const commentText = text.substring(range.start, range.end);
             
-            // Re-calculate isFirst based on original text positions (approximate is fine)
-            // A better way for "isFirst" is if it's the first in the merged list.
             const isFirst = (i === 0);
 
-            const type = CommentDetector.classify(commentText, isFirst);
+            // Use Async classification
+            const type = await CommentDetector.classifyAsync(commentText, isFirst);
             
             if (type === CommentType.Standard) {
                  // Check if it's a full line comment
@@ -78,21 +74,6 @@ export class CommentRemover {
                              removeEnd++; // Include \n
                          }
                          
-                         // Re-slice the result based on current offsets? 
-                         // No, we are modifying 'result' which is a copy.
-                         // But we are iterating in reverse, so indices in 'text' (ranges) are valid for the *start* of the string relative to the end.
-                         // Wait, if we use 'text' indices, they are static.
-                         // We must cut from 'result'.
-                         // BUT 'result' changes length.
-                         // Standard approach: use a string builder or apply edits to a mutable structure.
-                         // Since we are going reverse, indices > current point are invalid, but indices < current point are valid.
-                         // Correct.
-                         
-                         // We need to apply the edit to 'result'.
-                         // 'result' currently has the *original* content before this point (because we are moving backwards).
-                         // Actually no, 'result' is being modified.
-                         // If we modify tail, head indices are fine.
-                         
                          result = result.substring(0, lineStart) + result.substring(removeEnd);
                          continue;
                      }
@@ -103,6 +84,77 @@ export class CommentRemover {
             }
         }
 
+        return result;
+    }
+
+    public removeComments(text: string, languageId: string): string {
+        // Sync version for compatibility or simple use cases
+        // Just calls the sync logic (duplicate mostly, but simpler)
+        // For now, let's just warn or replicate sync logic if we must keep it.
+        // But our task is integration. I'll leave this method but with sync classify.
+
+        const patterns = getLanguagePatterns(languageId);
+        if (!patterns) return text;
+        // ... (truncated reuse of logic for sync)
+        // To avoid code duplication in a real codebase we'd extract the logic
+        // For this tool call, I'll just keep the structure clean by only adding the Async one 
+        // and optionally deprecating the sync one if not needed. 
+        // But extension.ts uses it. I will update extension.ts to use Async.
+        // So I can leave this as is (sync) or update it.
+        // I will just add the async method and leave the sync method alone to minimize diff noise/risk, 
+        // but `extension.ts` will switch to `removeCommentsAsync`.
+        return this.removeCommentsSyncInternal(text, languageId);
+    }
+    
+    private removeCommentsSyncInternal(text: string, languageId: string): string {
+        const patterns = getLanguagePatterns(languageId);
+        if (!patterns) return text;
+
+        const safeRanges = this.findSafeRanges(text, patterns);
+        let commentRanges = this.findCommentRanges(text, patterns);
+        
+        commentRanges = commentRanges.filter(comment => !safeRanges.some(safe => (comment.start >= safe.start && comment.end <= safe.end)));
+        commentRanges.sort((a, b) => a.start - b.start);
+        
+        const mergedRanges: {start: number, end: number}[] = [];
+        if (commentRanges.length > 0) {
+            let current = commentRanges[0];
+            for (let i = 1; i < commentRanges.length; i++) {
+                const next = commentRanges[i];
+                if (next.start < current.end) {
+                    if (next.end > current.end) current.end = next.end;
+                } else {
+                    mergedRanges.push(current);
+                    current = next;
+                }
+            }
+            mergedRanges.push(current);
+        }
+
+        let result = text;
+        for (let i = mergedRanges.length - 1; i >= 0; i--) {
+            const range = mergedRanges[i];
+            const commentText = text.substring(range.start, range.end);
+            const isFirst = (i === 0);
+            const type = CommentDetector.classify(commentText, isFirst);
+            
+            if (type === CommentType.Standard) {
+                 const lineStart = text.lastIndexOf('\n', range.start) + 1;
+                 const nextLineBreak = text.indexOf('\n', range.end);
+                 const prefix = text.substring(lineStart, range.start);
+                 if (prefix.trim() === '') {
+                     const suffixEnd = (nextLineBreak === -1) ? text.length : nextLineBreak;
+                     const suffix = text.substring(range.end, suffixEnd);
+                     if (suffix.trim() === '') {
+                         let removeEnd = suffixEnd;
+                         if (nextLineBreak !== -1) removeEnd++;
+                         result = result.substring(0, lineStart) + result.substring(removeEnd);
+                         continue;
+                     }
+                 }
+                 result = result.substring(0, range.start) + result.substring(range.end);
+            }
+        }
         return result;
     }
 

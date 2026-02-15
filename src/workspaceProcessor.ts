@@ -54,7 +54,7 @@ export class WorkspaceProcessor {
                 try {
                     const document = await vscode.workspace.openTextDocument(file);
                     const originalContent = document.getText();
-                    const cleanContent = this.commentRemover.removeComments(originalContent, document.languageId);
+                    const cleanContent = await this.commentRemover.removeCommentsAsync(originalContent, document.languageId);
                     
                     if (originalContent !== cleanContent) {
                         const edit = new vscode.WorkspaceEdit();

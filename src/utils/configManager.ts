@@ -20,4 +20,8 @@ export class ConfigManager {
     static get excludePatterns(): string[] {
         return vscode.workspace.getConfiguration('smartCommentRemover').get('excludePatterns', []);
     }
+
+    static get enableAI(): boolean {
+        return vscode.workspace.getConfiguration('smartCommentRemover').get('enableAI', true);
+    }
 }

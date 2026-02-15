@@ -80,6 +80,11 @@
             "**/build/**"
           ],
           "description": "Glob patterns for files to exclude from workspace operations"
+        },
+        "smartCommentRemover.enableAI": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered comment classification (requires OpenAI or Groq API key)"
         }
       }
     },
@@ -120,6 +125,9 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "minimatch": "^10.2.0"
+    "dotenv": "^17.3.1",
+    "groq-sdk": "^0.37.0",
+    "minimatch": "^10.2.0",
+    "openai": "^6.22.0"
   }
 }
