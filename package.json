@@ -2,7 +2,7 @@
   "name": "smart-comment-remover",
   "displayName": "AI-Powered Comment Remover",
   "description": "Intelligently remove comments from your code while preserving important documentation and annotations",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "antigravity",
   "engines": {
     "vscode": "^1.96.0"
